@@ -39,3 +39,9 @@ CREATE TABLE songs (
     created_by INT REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY,
+    user_id INT,
+    created_at TIMESTAMP DEFAULT NOW()
+);

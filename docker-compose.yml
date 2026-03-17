@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:17
+    restart: unless-stopped
     container_name: artist-db
     ports:
       - "5433:5432"

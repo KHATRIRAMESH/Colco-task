@@ -1,0 +1,21 @@
+body {
+  background-color: lightblue;
+}
+
+#login-container {
+  background-color: inherit;
+  width: 300px;
+  margin: 50px auto;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+button {
+  cursor: pointer;
+}

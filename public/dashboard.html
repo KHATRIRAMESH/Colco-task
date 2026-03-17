@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="./styles/dashboard.css" />
+  </head>
+  <body>
+    <aside id="side-bar">
+      <div class="side-bar-menu">
+        <h2 onclick="loadUser()">Users</h2>
+        <h2 onclick="loadArtist()">Artist</h2>
+      </div>
+      <button type="button" id="logout-button">Logout</button>
+    </aside>
+
+    <main id="dashboard-content">
+      <h1>Welcome to the Dashboard</h1>
+
+      <section class="content-block">
+        <h2>Overview</h2>
+        <p>Dashboard content goes here.</p>
+      </section>
+      <section class="content-block">
+        <h2>Recent Activity</h2>
+        <p>
+          Add your list/table content here. This section demonstrates scroll
+          behavior.
+        </p>
+      </section>
+      <section class="content-block">
+        <h2>More Content</h2>
+        <p>Keep adding sections/cards and only this right area will scroll.</p>
+      </section>
+    </main>
+
+    <script src="/javascript/api.js"></script>
+    <script src="/javascript/app.js"></script>
+  </body>
+</html>
