@@ -4,26 +4,53 @@ Simple project scaffold for an artist/song admin system.
 
 Current state:
 
-- Backend: Node.js + PostgreSQL connection bootstrap.
-- Database: PostgreSQL in Docker, initialized from SQL schema.
-- Frontend: static scaffold files (currently placeholders).
+- public
+- src
+- sql
+- .env.example
+- docker-compose.yml
 
 ## Project Structure
 
 ```text
 colco-task/
-├── .env.example
-├── backend/
-│   ├── docker-compose.yml
-│   ├── package.json
-│   ├── sql/
-│   │   └── schema.sql
-│   └── src/
-│       ├── index.js
-│       └── db/dbConnect.js
-└── frontend/
-	├── *.html
-	└── js/
+├── docker-compose.yml
+├── package.json
+├── package-lock.json
+├── public
+│   ├── artists.html
+│   ├── dashboard.html
+│   ├── javascript
+│   │   ├── api.js
+│   │   └── app.js
+│   ├── login.html
+│   ├── register.html
+│   ├── songs.html
+│   ├── styles
+│   │   ├── dashboard.css
+│   │   └── login.css
+│   └── users.html
+├── README.md
+├── sql
+│   ├── queries.js
+│   └── schema.sql
+└── src
+    ├── controllers
+    │   └── userController.js
+    ├── db
+    │   └── dbConnect.js
+    ├── helper
+    │   ├── bodyParse.js
+    │   └── static.js
+    ├── index.js
+    ├── middleware
+    │   └── sessionAuth.js
+    ├── router.js
+    ├── routes
+    │   ├── songs.js
+    │   └── users.js
+    └── services
+        └── user.js
 ```
 
 ## Prerequisites
@@ -91,7 +118,7 @@ cd ..
 From project root:
 
 ```bash
-node backend/src/index.js
+npm run dev
 ```
 
 Expected log:
@@ -153,4 +180,3 @@ docker compose up -d postgres
 ## Notes
 
 - Backend DB connection config is in `backend/src/db/dbConnect.js`.
-- Frontend files currently exist as placeholders and are not wired to backend APIs yet.
