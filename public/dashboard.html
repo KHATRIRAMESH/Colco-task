@@ -9,32 +9,22 @@
   <body>
     <aside id="side-bar">
       <div class="side-bar-menu">
-        <h2 onclick="loadUser()">Users</h2>
-        <h2 onclick="loadArtist()">Artist</h2>
+        <button type="button" id="tab-users" class="side-tab">Users</button>
+        <button type="button" id="tab-artists" class="side-tab">Artists</button>
       </div>
       <button type="button" id="logout-button">Logout</button>
     </aside>
 
     <main id="dashboard-content">
-      <h1>Welcome to the Dashboard</h1>
+      <h1 id="dashboard-title">Welcome to Dashboard</h1>
+      <p id="user-info" class="user-info">Not logged in</p>
 
-      <section class="content-block">
-        <h2>Overview</h2>
-        <p>Dashboard content goes here.</p>
-      </section>
-      <section class="content-block">
-        <h2>Recent Activity</h2>
-        <p>
-          Add your list/table content here. This section demonstrates scroll
-          behavior.
-        </p>
-      </section>
-      <section class="content-block">
-        <h2>More Content</h2>
-        <p>Keep adding sections/cards and only this right area will scroll.</p>
+      <section id="tab-content" class="content-block">
+        <p>Select a tab to load data.</p>
       </section>
     </main>
 
+    <script src="/javascript/state.js"></script>
     <script src="/javascript/api.js"></script>
     <script src="/javascript/app.js"></script>
   </body>
