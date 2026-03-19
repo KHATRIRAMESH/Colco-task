@@ -9,6 +9,7 @@ CREATE TABLE users(
     first_name varchar (255) NOT NULL,
     last_name varchar (255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    salt VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     phone varchar(20),
     gender gender_type,
@@ -36,12 +37,11 @@ CREATE TABLE songs (
     album_name TEXT,
     genre genre_type,
     artist_id INT REFERENCES artists(id) ON DELETE CASCADE,
-    created_by INT REFERENCES users(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE sessions (
     id UUID PRIMARY KEY,
-    user_id INT,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT NOW()
 );
