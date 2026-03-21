@@ -1,6 +1,6 @@
 # Colco Task
 
-Simple project scaffold for an artist/song admin system.
+A Simple Admin panel to manage records of artists with their songs collection.
 
 Current state:
 
@@ -39,9 +39,6 @@ colco-task/
     │   └── userController.js
     ├── db
     │   └── dbConnect.js
-    ├── helper
-    │   ├── bodyParse.js
-    │   └── static.js
     ├── index.js
     ├── middleware
     │   └── sessionAuth.js
@@ -49,8 +46,11 @@ colco-task/
     ├── routes
     │   ├── songs.js
     │   └── users.js
-    └── services
-        └── user.js
+    ├── services
+    │   └── user.js
+    └── utils
+        ├── bodyParse.js
+        └── static.js
 ```
 
 ## Prerequisites
@@ -103,14 +103,12 @@ The database schema is auto-created on first startup from:
 
 - `sql/schema.sql`
 
-## 3) Install Backend Dependencies
+## 3) Install Dependencies
 
 From project root:
 
 ```bash
-cd backend
 npm install
-cd ..
 ```
 
 ## 4) Run Backend
@@ -179,4 +177,4 @@ docker compose up -d postgres
 
 ## Notes
 
-- Backend DB connection config is in `backend/src/db/dbConnect.js`.
+- Database connection config is in `src/db/dbConnect.js`.

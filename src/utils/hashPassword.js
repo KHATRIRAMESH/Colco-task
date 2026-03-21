@@ -1,18 +1,20 @@
 import crypto from "crypto";
 
 export function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString("hex");
+  const salt = crypto.randomBytes(8).toString("hex");
   const hash = crypto
     .createHash("sha256")
     .update(salt + password)
     .digest("hex");
-  return { salt, hash };
+  const hashedPassword = `${salt}:${hash}`;
+  return { hashedPassword };
 }
 
-export function verifyPassword(enteredPassword, storedHash, storedSalt) {
+export function verifyPassword(enteredPassword, storedHash) {
+  const [salt, hashedPassword] = storedHash.split(":");
   const hashToVerify = crypto
     .createHash("sha256")
-    .update(storedSalt + enteredPassword)
+    .update(salt + enteredPassword)
     .digest("hex");
-  return hashToVerify === storedHash;
+  return hashToVerify === hashedPassword;
 }

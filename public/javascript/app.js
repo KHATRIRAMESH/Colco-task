@@ -8,23 +8,44 @@ const artistsTabBtn = document.getElementById("tab-artists");
 const tabContent = document.getElementById("tab-content");
 const dashboardTitle = document.getElementById("dashboard-title");
 
+let currentTableEntity = null;
+const tableDataStore = {
+  users: [],
+  artists: [],
+  songs: [],
+};
+const paginationState = {
+  users: { page: 1, limit: 10, totalRecords: 0, totalPages: 1 },
+  artists: { page: 1, limit: 10, totalRecords: 0, totalPages: 1 },
+  songs: { page: 1, limit: 10, totalRecords: 0, totalPages: 1 },
+};
+
 //form for creating the Artist Manager.
-function getCreateArtistManagerFormHtml() {
+function getCreateOrUpdateArtistManagerFormHtml() {
   return `
         <section class="content-block">
             <h3>Create Artist Manager</h3>
             <form id="create-artist-manager-form" class="inline-form">
+                <label for="am-first-name">First Name</label>
                 <input type="text" id="am-first-name" placeholder="First Name" required />
+                <label for="am-last-name">Last Name</label>
                 <input type="text" id="am-last-name" placeholder="Last Name" required />
+                <label for="am-dob">Date of Birth</label>
+                <input type="date" id="am-dob" placeholder="Date of Birth" required />
+                <label for="am-email">Email</label>
                 <input type="email" id="am-email" placeholder="Email" required />
+                <label for="am-password">Password</label>
                 <input type="password" id="am-password" placeholder="Password" required />
+                <label for="am-phone">Phone</label>
                 <input type="tel" id="am-phone" placeholder="Phone (optional)" />
+                <label for="am-gender">Gender</label>
                 <select id="am-gender">
                     <option value="">Gender (optional)</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                 </select>
+                <label for="am-address">Address</label>
                 <input type="text" id="am-address" placeholder="Address (optional)" />
                 <button type="submit">Create Artist Manager</button>
             </form>
@@ -33,21 +54,27 @@ function getCreateArtistManagerFormHtml() {
 }
 
 // Form for creating an Artist.
-function getCreateArtistFormHtml() {
+function getCreateOrUpdateArtistFormHtml() {
   return `
         <section class="content-block">
             <h3>Create Artist</h3>
             <form id="create-artist-form" class="inline-form">
+                <lable for="artist-name">Artist Name</lable>
                 <input type="text" id="artist-name" placeholder="Artist Name" required />
+                <lable for="artist-dob">Date of Birth</lable>
                 <input type="date" id="artist-dob" placeholder="Date of Birth" required />
+                <lable for="artist-gender">Gender</lable>
                 <select id="artist-gender">
                     <option value="">Gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                     <option value="other">Other</option>
                 </select>
+                <lable for="artist-address">Address</lable>
                 <input type="text" id="artist-address" placeholder="Address (optional)" />
-                <input type="date" id="artist-first-release" placeholder="First Release Year"/>
+                <lable for="artist-first-release">First Release Year</lable>
+                <input type="number" id="artist-first-release" placeholder="First Release Year"/>
+                <lable for="artist-albums-released">Number of Albums Released</lable>
                 <input type="number" id="artist-albums-released" placeholder="Number of Albums Released" />
 
                 <button type="submit">Create Artist</button>
@@ -56,13 +83,16 @@ function getCreateArtistFormHtml() {
     `;
 }
 
-function getCreateSongFormHtml() {
+function getCreateOrUpdateSongFormHtml() {
   return `
         <section class="content-block">
             <h3>Create Song</h3>
             <form id="create-song-form" class="inline-form">
+                <label for="song-name">Song Name</label>
                 <input type="text" id="song-name" placeholder="Song Name" required />
+                <label for="song-genre">Genre</label>
                 <input type="text" id="song-genre" placeholder="Genre" required />
+                <label for="song-artist">Artist</label>
                 <select id="song-artist">
                     <option value="">Select Artist</option>
                 </select>
@@ -72,7 +102,182 @@ function getCreateSongFormHtml() {
     `;
 }
 
-function renderRows(title, rows, columns) {
+function getCreateButtonConfig(role, entity) {
+  if (role === "super_admin" && entity === "users") {
+    return { entity: "users", label: "Create Artist Manager" };
+  }
+
+  if (role === "artist_manager" && entity === "artists") {
+    return { entity: "artists", label: "Create Artist" };
+  }
+
+  if (role === "artist" && entity === "songs") {
+    return { entity: "songs", label: "Create Song" };
+  }
+
+  return null;
+}
+
+function renderCreateButton(entity, role) {
+  const config = getCreateButtonConfig(role, entity);
+  if (!config || !tabContent) {
+    return;
+  }
+
+  tabContent.insertAdjacentHTML(
+    "beforeend",
+    `
+      <div class="table-toolbar">
+        <button type="button" class="open-create-modal-btn" data-entity="${config.entity}">${config.label}</button>
+      </div>
+    `,
+  );
+}
+
+function getCreateModalFields(entity) {
+  if (entity === "users") {
+    return `
+      <label for="create-first-name">First Name</label>
+      <input id="create-first-name" name="firstName" type="text" required />
+
+      <label for="create-last-name">Last Name</label>
+      <input id="create-last-name" name="lastName" type="text" required />
+      <label for="create-dob">Date of Birth</label>
+      <input id="create-dob" name="dob" type="date" required />
+      <label for="create-email">Email</label>
+      <input id="create-email" name="email" type="email" required />
+      <label for="create-password">Password</label>
+      <input id="create-password" name="password" type="password" required />
+      <label for="create-phone">Phone</label>
+      <input id="create-phone" name="phone" type="text" />
+      <label for="create-gender">Gender</label>
+      <select id="create-gender" name="gender">
+        <option value="">Select gender</option>
+        <option value="male">male</option>
+        <option value="female">female</option>
+        <option value="other">other</option>
+      </select>
+
+      <label for="create-address">Address</label>
+      <input id="create-address" name="address" type="text" />
+    `;
+  }
+
+  if (entity === "artists") {
+    return `
+      <label for="create-name">Name</label>
+      <input id="create-name" name="name" type="text" required />
+
+      <label for="create-dob">Date of Birth</label>
+      <input id="create-dob" name="dob" type="date" required />
+
+      <label for="create-gender">Gender</label>
+      <select id="create-gender" name="gender" required>
+        <option value="male">male</option>
+        <option value="female">female</option>
+        <option value="other">other</option>
+      </select>
+
+      <label for="create-address">Address</label>
+      <input id="create-address" name="address" type="text" required />
+
+      <label for="create-first-release-year">First Release Year</label>
+      <input id="create-first-release-year" name="firstReleaseYear" type="number" />
+
+      <label for="create-no-albums">No. of Albums Released</label>
+      <input id="create-no-albums" name="noOfAlbumsReleased" type="number" />
+    `;
+  }
+
+  if (entity === "songs") {
+    return `
+      <label for="create-title">Title</label>
+      <input id="create-title" name="title" type="text" required />
+
+      <label for="create-genre">Genre</label>
+      <input id="create-genre" name="genre" type="text" required />
+
+      <label for="create-album">Album</label>
+      <input id="create-album" name="albumName" type="text" />
+
+      <label for="create-artist-id">Artist ID</label>
+      <input id="create-artist-id" name="artistId" type="number" />
+    `;
+  }
+
+  return "";
+}
+
+function openFormModal({ title, fieldsHtml, submitText, onSubmit }) {
+  closeEditModal();
+
+  const modal = document.createElement("div");
+  modal.id = "edit-modal-overlay";
+  modal.className = "modal-overlay";
+  modal.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+      <h1 id="edit-modal-title">${title}</h1>
+      <form id="edit-modal-form" class="inline-form">
+        ${fieldsHtml}
+        <div class="modal-actions">
+          <button type="button" id="cancel-edit-btn">Cancel</button>
+          <button type="submit">${submitText}</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.querySelector("#cancel-edit-btn")?.addEventListener("click", () => {
+    closeEditModal();
+  });
+
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      closeEditModal();
+    }
+  });
+
+  const form = modal.querySelector("#edit-modal-form");
+  if (!form) {
+    return;
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      await onSubmit(payload);
+      closeEditModal();
+    } catch (error) {
+      alert(error.message || "Action failed");
+    }
+  });
+}
+
+function renderPaginationControls(entity) {
+  const state = paginationState[entity];
+  if (!state) {
+    return "";
+  }
+
+  const { page, limit, totalRecords, totalPages } = state;
+  const isPrevDisabled = page <= 1;
+  const isNextDisabled = totalRecords <= page * limit || page >= totalPages;
+
+  return `
+    <div class="pagination-controls" data-entity="${entity}">
+      <button type="button" class="pagination-btn" data-action="prev" data-entity="${entity}" ${isPrevDisabled ? "disabled" : ""}>Prev</button>
+      <span class="pagination-info">Page ${page} of ${totalPages} (${totalRecords} total)</span>
+      <button type="button" class="pagination-btn" data-action="next" data-entity="${entity}" ${isNextDisabled ? "disabled" : ""}>Next</button>
+    </div>
+  `;
+}
+
+function renderRows(title, rows, columns, entity) {
   if (!tabContent) {
     return;
   }
@@ -82,13 +287,29 @@ function renderRows(title, rows, columns) {
     return;
   }
 
+  // render headers of the table
   const headerRow = columns
     .map((column) => `<th>${column.label}</th>`)
     .join("");
+
+  //render body of the table
   const bodyRows = rows
     .map((row) => {
       const cells = columns
-        .map((column) => `<td>${row[column.key] ?? ""}</td>`)
+        .map((column) => {
+          if (column.key === "operations") {
+            return `
+              <td>
+                <div class="table-actions" data-row-id="${row.id}">
+                  <button type="button" class="action-btn update-btn" data-action="update" data-id="${row.id}">Update</button>
+                  <button type="button" class="action-btn delete-btn" data-action="delete" data-id="${row.id}">Delete</button>
+                </div>
+              </td>
+            `;
+          }
+
+          return `<td>${row[column.key] ?? ""}</td>`;
+        })
         .join("");
       return `<tr>${cells}</tr>`;
     })
@@ -97,7 +318,7 @@ function renderRows(title, rows, columns) {
   tabContent.innerHTML = `
         <h2>${title}</h2>
       <div class="table-scroll">
-        <table class="data-table">
+        <table class="data-table" data-entity="${entity || ""}">
           <thead>
             <tr>${headerRow}</tr>
           </thead>
@@ -106,7 +327,324 @@ function renderRows(title, rows, columns) {
           </tbody>
         </table>
       </div>
+      ${entity ? renderPaginationControls(entity) : ""}
     `;
+}
+
+function getClientPaginatedRows(entity, rows) {
+  const state = paginationState[entity];
+  const startIndex = (state.page - 1) * state.limit;
+  const endIndex = startIndex + state.limit;
+  return rows.slice(startIndex, endIndex);
+}
+
+function setClientPaginationMeta(entity, totalRecords) {
+  const state = paginationState[entity];
+  state.totalRecords = totalRecords;
+  state.totalPages = Math.max(1, Math.ceil(totalRecords / state.limit));
+  if (state.page > state.totalPages) {
+    state.page = state.totalPages;
+  }
+}
+
+function setServerPaginationMeta(entity, pagination) {
+  const state = paginationState[entity];
+
+  const resolvedPage = Number(
+    pagination?.currentPage ?? pagination?.page ?? state.page ?? 1,
+  );
+  const resolvedLimit = Number(pagination?.limit ?? state.limit ?? 10);
+  const resolvedTotalRecords = Number(
+    pagination?.totalRecords ?? pagination?.total ?? 0,
+  );
+  const resolvedTotalPages = Number(
+    pagination?.totalPages ??
+      Math.max(1, Math.ceil(resolvedTotalRecords / resolvedLimit)),
+  );
+
+  state.page = resolvedPage;
+  state.limit = resolvedLimit;
+  state.totalRecords = resolvedTotalRecords;
+  state.totalPages = resolvedTotalPages;
+
+  if (state.page > state.totalPages) {
+    state.page = state.totalPages;
+  }
+
+  if (state.page < 1) {
+    state.page = 1;
+  }
+}
+
+async function handlePaginationAction(entity, action) {
+  const state = paginationState[entity];
+  if (!state) return;
+
+  if (action === "prev" && state.page > 1) {
+    state.page -= 1;
+  }
+
+  if (action === "next" && state.page < state.totalPages) {
+    state.page += 1;
+  }
+
+  if (entity === "users") {
+    await loadUsersTab(resolveCurrentRole());
+  }
+
+  if (entity === "artists") {
+    await loadArtistsTab(resolveCurrentRole());
+  }
+
+  if (entity === "songs") {
+    await loadSongsTab();
+  }
+}
+
+function getRowByEntityAndId(entity, rowId) {
+  const rows = tableDataStore[entity] || [];
+  return rows.find((row) => String(row.id) === String(rowId));
+}
+
+function getModalFields(entity, row) {
+  console.log(
+    "Getting modal fields for entity:",
+    entity,
+    "with row data:",
+    row,
+  );
+  if (entity === "users") {
+    return `
+      <label for="edit-first-name">First Name</label>
+      <input id="edit-first-name" name="firstName" type="text" value="${row.first_name || ""}" required />
+
+      <label for="edit-last-name">Last Name</label>
+      <input id="edit-last-name" name="lastName" type="text" value="${row.last_name || ""}" required />
+
+      <label for="edit-email">Email</label>
+      <input id="edit-email" name="email" type="email" value="${row.email || ""}" required />
+
+      <label for="edit-dob">Date of Birth</label>
+      <input id="edit-dob" name="dob" type="date" value="${row.dob || ""}" />
+
+      <label for="edit-phone">Phone</label>
+      <input id="edit-phone" name="phone" type="text" value="${row.phone || ""}" />
+      <label for ="edit-gender">Gender</label>
+      <select id="edit-gender" name="gender" required>
+        <option value="male" ${row.gender === "m" ? "selected" : ""}>male</option>
+        <option value="female" ${row.gender === "f" ? "selected" : ""}>female</option>
+        <option value="other" ${row.gender === "o" ? "selected" : ""}>other</option>
+      </select>
+
+      <label for="edit-address">Address</label>
+      <input id="edit-address" name="address" type="text" value="${row.address || ""}" />
+
+      <label for="edit-role">Role</label>
+      <select id="edit-role" name="role" required>
+        <option value="super_admin" ${row.role === "super_admin" ? "selected" : ""}>super_admin</option>
+        <option value="artist_manager" ${row.role === "artist_manager" ? "selected" : ""}>artist_manager</option>
+        <option value="artist" ${row.role === "artist" ? "selected" : ""}>artist</option>
+      </select>
+    `;
+  }
+
+  if (entity === "artists") {
+    return `
+      <label for="edit-name">Name</label>
+      <input id="edit-name" name="name" type="text" value="${row.name || ""}" required />
+
+      <label for="edit-dob">Date of Birth</label>
+      <input id="edit-dob" name="dob" type="date" value="${row.dob || ""}" />
+
+      <label for="edit-gender">Gender</label>
+      <select id="edit-gender" name="gender" required>
+        <option value="male" ${row.gender === "m" || row.gender === "male" ? "selected" : ""}>male</option>
+        <option value="female" ${row.gender === "f" || row.gender === "female" ? "selected" : ""}>female</option>
+        <option value="other" ${row.gender === "o" || row.gender === "other" ? "selected" : ""}>other</option>
+      </select>
+
+      <label for="edit-address">Address</label>
+      <input id="edit-address" name="address" type="text" value="${row.address || ""}" />
+
+      <label for="edit-first-release-year">First Release Year</label>
+      <input id="edit-first-release-year" name="firstReleaseYear" type="number" value="${row.first_release_year || ""}" />
+
+      <label for="edit-no-albums">No. of Albums Released</label>
+      <input id="edit-no-albums" name="noOfAlbumsReleased" type="number" value="${row.no_of_albums_released || ""}" />
+    `;
+  }
+
+  if (entity === "songs") {
+    return `
+      <label for="edit-title">Title</label>
+      <input id="edit-title" name="title" type="text" value="${row.title || ""}" required />
+
+      <label for="edit-album-name">Album</label>
+      <input id="edit-album-name" name="albumName" type="text" value="${row.album_name || ""}" />
+
+      <label for="edit-genre">Genre</label>
+      <input id="edit-genre" name="genre" type="text" value="${row.genre || ""}" required />
+
+      <label for="edit-artist-id">Artist ID</label>
+      <input id="edit-artist-id" name="artistId" type="number" value="${row.artist_id || ""}" />
+    `;
+  }
+
+  return "";
+}
+
+function closeEditModal() {
+  const existingModal = document.getElementById("edit-modal-overlay");
+  if (existingModal) {
+    existingModal.remove();
+  }
+}
+
+function openEditModal(entity, rowId) {
+  const row = getRowByEntityAndId(entity, rowId);
+  if (!row) {
+    alert("Unable to find selected row data.");
+    return;
+  }
+
+  const fieldsHtml = getModalFields(entity, row);
+  if (!fieldsHtml) {
+    alert("No update form available for this table.");
+    return;
+  }
+
+  openFormModal({
+    title: `Update ${entity.slice(0, -1)}`,
+    fieldsHtml,
+    submitText: "Save",
+    onSubmit: async (payload) => {
+      if (entity === "users") {
+        await updateUser(rowId, payload);
+        alert("User updated successfully");
+        await loadUsersTab(resolveCurrentRole());
+      }
+
+      if (entity === "artists") {
+        await updateArtist(rowId, payload);
+        alert("Artist updated successfully");
+        await loadArtistsTab(resolveCurrentRole());
+      }
+
+      if (entity === "songs") {
+        await updateSong(rowId, payload);
+        alert("Song updated successfully");
+        await loadSongsTab();
+      }
+    },
+  });
+}
+
+function openCreateModal(entity) {
+  const fieldsHtml = getCreateModalFields(entity);
+  if (!fieldsHtml) {
+    return;
+  }
+
+  openFormModal({
+    title: `Create ${entity.slice(0, -1)}`,
+    fieldsHtml,
+    submitText: "Create",
+    onSubmit: async (payload) => {
+      if (entity === "users") {
+        await createArtistManager(payload);
+        alert("Artist manager created successfully");
+        await loadUsersTab(resolveCurrentRole());
+      }
+
+      if (entity === "artists") {
+        await createArtist(payload);
+        alert("Artist created successfully");
+        await loadArtistsTab(resolveCurrentRole());
+      }
+
+      if (entity === "songs") {
+        await createSong(payload);
+        alert("Song created successfully");
+        await loadSongsTab();
+      }
+    },
+  });
+}
+
+async function handleUpdateAction(entity, rowId) {
+  openEditModal(entity, rowId);
+}
+
+async function handleDeleteAction(entity, rowId) {
+  const confirmDelete = confirm("Are you sure you want to delete this record?");
+  if (!confirmDelete) {
+    return;
+  }
+
+  if (entity === "users") {
+    await deleteUser(rowId);
+    alert("User deleted successfully");
+    await loadUsersTab(resolveCurrentRole());
+    return;
+  }
+
+  if (entity === "artists") {
+    await deleteArtist(rowId);
+    alert("Artist deleted successfully");
+    await loadArtistsTab(resolveCurrentRole());
+    return;
+  }
+
+  if (entity === "songs") {
+    await deleteSong(rowId);
+    alert("Song deleted successfully");
+    await loadSongsTab();
+  }
+}
+
+async function handleTableActionClick(event) {
+  const createButton = event.target.closest(".open-create-modal-btn");
+  if (createButton) {
+    const entity = createButton.dataset.entity;
+    openCreateModal(entity);
+    return;
+  }
+
+  const paginationButton = event.target.closest(".pagination-btn");
+  if (paginationButton) {
+    const action = paginationButton.dataset.action;
+    const entity = paginationButton.dataset.entity;
+    await handlePaginationAction(entity, action);
+    return;
+  }
+
+  const button = event.target.closest(".action-btn");
+  if (!button) {
+    return;
+  }
+
+  const action = button.dataset.action;
+  const rowId = button.dataset.id;
+  const table = button.closest("table");
+  const entity = table?.dataset.entity || currentTableEntity;
+
+  console.log("Action button clicked:", { action, rowId, entity });
+
+  if (!action || !rowId || !entity) {
+    return;
+  }
+
+  try {
+    if (action === "update") {
+      await handleUpdateAction(entity, rowId);
+    }
+
+    if (action === "delete") {
+      await handleDeleteAction(entity, rowId);
+    }
+  } catch (error) {
+    alert(error.message || "Action failed");
+  }
 }
 
 function resolveCurrentRole(role) {
@@ -115,22 +653,6 @@ function resolveCurrentRole(role) {
   }
 
   return stateManage.getUser()?.role;
-}
-
-function getRoleBasedFormHtml(role) {
-  if (role === "super_admin") {
-    return getCreateArtistManagerFormHtml();
-  }
-
-  if (role === "artist_manager") {
-    return getCreateArtistFormHtml();
-  }
-
-  if (role === "artist") {
-    return getCreateSongFormHtml();
-  }
-
-  return "";
 }
 
 function showAccessDenied(message) {
@@ -178,11 +700,7 @@ function initializeDashboardByRole() {
   if (role === "artist") {
     if (usersTabBtn) usersTabBtn.style.display = "none";
     if (artistsTabBtn) artistsTabBtn.style.display = "none";
-    tabContent.innerHTML = `
-      <h2>Songs</h2>
-      <p>Role: artist</p>
-      ${getCreateSongFormHtml()}
-    `;
+    loadSongsTab();
     return;
   }
 
@@ -204,48 +722,33 @@ async function loadUsersTab(role) {
       return;
     }
 
-    const data = await getUsers();
+    const data = await getUsers({
+      page: paginationState.users.page,
+      limit: paginationState.users.limit,
+    });
+    console.log("Fetched users data:", data);
     const rows = data.users || [];
-    renderRows("Users", rows, [
-      { key: "id", label: "ID" },
-      { key: "first_name", label: "First Name" },
-      { key: "last_name", label: "Last Name" },
-      { key: "email", label: "Email" },
-      { key: "phone", label: "Phone" },
-      { key: "address", label: "Address" },
-      { key: "role", label: "Role" },
-    ]);
-
-    const roleBasedFormHtml = getRoleBasedFormHtml(currentRole);
-
-    if (roleBasedFormHtml) {
-      tabContent.insertAdjacentHTML("beforeend", roleBasedFormHtml);
-    }
-
-    const createForm = document.getElementById("create-artist-manager-form");
-    if (createForm) {
-      createForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const payload = {
-          firstName: document.getElementById("am-first-name").value.trim(),
-          lastName: document.getElementById("am-last-name").value.trim(),
-          email: document.getElementById("am-email").value.trim(),
-          password: document.getElementById("am-password").value,
-          phone: document.getElementById("am-phone").value.trim(),
-          gender: document.getElementById("am-gender").value,
-          address: document.getElementById("am-address").value.trim(),
-        };
-
-        try {
-          const result = await createArtistManager(payload);
-          alert(result.message || "Artist manager created successfully");
-          await loadUsersTab(currentRole);
-        } catch (error) {
-          alert(error.message || "Failed to create artist manager");
-        }
-      });
-    }
+    setServerPaginationMeta("users", data.pagination);
+    tableDataStore.users = rows;
+    currentTableEntity = "users";
+    renderRows(
+      "Users",
+      rows,
+      [
+        { key: "id", label: "ID" },
+        { key: "first_name", label: "First Name" },
+        { key: "last_name", label: "Last Name" },
+        { key: "email", label: "Email" },
+        { key: "phone", label: "Phone" },
+        { key: "dob", label: "Date of Birth" },
+        { key: "gender", label: "Gender" },
+        { key: "address", label: "Address" },
+        { key: "role", label: "Role" },
+        { key: "operations", label: "Operations" },
+      ],
+      "users",
+    );
+    renderCreateButton("users", currentRole);
   } catch (error) {
     tabContent.innerHTML = `<p>Failed to load users: ${error.message}</p>`;
   }
@@ -266,21 +769,69 @@ async function loadArtistsTab(role) {
       return;
     }
 
-    const data = await getArtists();
-    renderRows("Artists", data.artists || [], [
-      { key: "id", label: "ID" },
-      { key: "name", label: "Name" },
-      { key: "gender", label: "Gender" },
-      { key: "address", label: "Address" },
-      { key: "first_release_year", label: "First Release Year" },
-    ]);
-
-    const roleBasedFormHtml = getRoleBasedFormHtml(currentRole);
-    if (roleBasedFormHtml && currentRole === "artist_manager") {
-      tabContent.insertAdjacentHTML("beforeend", roleBasedFormHtml);
-    }
+    const data = await getArtists({
+      page: paginationState.artists.page,
+      limit: paginationState.artists.limit,
+    });
+    tableDataStore.artists = data.artists || [];
+    setClientPaginationMeta("artists", tableDataStore.artists.length);
+    const paginatedArtists = getClientPaginatedRows(
+      "artists",
+      tableDataStore.artists,
+    );
+    currentTableEntity = "artists";
+    renderRows(
+      "Artists",
+      paginatedArtists,
+      [
+        { key: "id", label: "ID" },
+        { key: "name", label: "Name" },
+        { key: "gender", label: "Gender" },
+        { key: "address", label: "Address" },
+        { key: "first_release_year", label: "First Release Year" },
+        { key: "no_of_albums_released", label: "Albums Released" },
+        { key: "operations", label: "Operations" },
+      ],
+      "artists",
+    );
+    renderCreateButton("artists", currentRole);
   } catch (error) {
     tabContent.innerHTML = `<p>Failed to load artists: ${error.message}</p>`;
+  }
+}
+
+async function loadSongsTab() {
+  if (!tabContent) {
+    return;
+  }
+
+  tabContent.innerHTML = "<p>Loading songs...</p>";
+
+  try {
+    const data = await getSongs();
+    tableDataStore.songs = data.songs || [];
+    setClientPaginationMeta("songs", tableDataStore.songs.length);
+    const paginatedSongs = getClientPaginatedRows(
+      "songs",
+      tableDataStore.songs,
+    );
+    currentTableEntity = "songs";
+    renderRows(
+      "Songs",
+      paginatedSongs,
+      [
+        { key: "id", label: "ID" },
+        { key: "title", label: "Title" },
+        { key: "album_name", label: "Album" },
+        { key: "genre", label: "Genre" },
+        { key: "artist_id", label: "Artist ID" },
+        { key: "operations", label: "Operations" },
+      ],
+      "songs",
+    );
+    renderCreateButton("songs", resolveCurrentRole());
+  } catch (error) {
+    tabContent.innerHTML = `<p>Failed to load songs: ${error.message}</p>`;
   }
 }
 
@@ -377,13 +928,20 @@ if (logOutBtn) {
 }
 
 if (usersTabBtn) {
-  usersTabBtn.addEventListener("click", () => loadUsersTab());
+  usersTabBtn.addEventListener("click", () => {
+    paginationState.users.page = 1;
+    loadUsersTab();
+  });
 }
 
 if (artistsTabBtn) {
-  artistsTabBtn.addEventListener("click", () => loadArtistsTab());
+  artistsTabBtn.addEventListener("click", () => {
+    paginationState.artists.page = 1;
+    loadArtistsTab();
+  });
 }
 
 if (tabContent) {
+  tabContent.addEventListener("click", handleTableActionClick);
   initializeDashboardByRole();
 }
