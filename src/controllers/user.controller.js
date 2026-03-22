@@ -1,7 +1,6 @@
 import crypto from "crypto";
 import { getRequestBody } from "../utils/bodyParse.js";
 import { sessionAuthMiddleware } from "../middleware/sessionAuth.js";
-import { pool } from "../db/dbConnect.js";
 import {
   deleteUserById,
   findUserByEmail,
@@ -16,6 +15,7 @@ import {
   findUserBySessionId,
 } from "../services/sessions.service.js";
 import { converter } from "../utils/converter.js";
+import { normalizeGender } from "../utils/genderNormalize.js";
 
 export async function registerUserController(req, res) {
   try {
@@ -63,9 +63,6 @@ export async function registerUserController(req, res) {
     const normalizedRole = role || "super_admin";
 
     const { hashedPassword } = hashPassword(password);
-    console.log(
-      `Hashed password generated for registration:  ${hashedPassword}`,
-    );
 
     const user = await insertUser({
       firstName,
@@ -73,7 +70,7 @@ export async function registerUserController(req, res) {
       email,
       password: hashedPassword,
       phone,
-      dob,
+      dobDate,
       gender: normalizedGender,
       address,
       role: normalizedRole,
@@ -153,6 +150,14 @@ export async function createUserController(req, res) {
       return res.end(JSON.stringify({ message: "Invalid gender value" }));
     }
 
+    const dobDate = converter(dob, "date");
+    if (dob && isNaN(dobDate.getTime())) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(
+        JSON.stringify({ message: "Invalid date format for dob" }),
+      );
+    }
+
     const { hashedPassword } = hashPassword(password);
     console.log(
       `Hashed password generated for user creation:  ${hashedPassword}`,
@@ -164,7 +169,7 @@ export async function createUserController(req, res) {
       email,
       password: hashedPassword,
       phone,
-      dob,
+      dobDate,
       gender: normalizedGender,
       address,
       role: "artist_manager",
@@ -246,20 +251,19 @@ export async function updateUserController(req, res) {
 
   console.log("Received body for user update:", body);
 
-  const genderMap = {
-    male: "m",
-    female: "f",
-    other: "o",
-  };
-
-  const normalizedGender = gender
-    ? genderMap[String(gender).toLowerCase()]
-    : null;
-
-  const dobDate = converter(dob, "date");
-  if (dob && isNaN(dobDate.getTime())) {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ message: "Invalid date format for dob" }));
+  let normalizedGender = null;
+  if (gender) {
+    normalizedGender = normalizeGender(gender);
+  }
+  let dobDate = null;
+  if (dob) {
+    dobDate = converter(dob, "date");
+    if (isNaN(dobDate.getTime())) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(
+        JSON.stringify({ message: "Invalid date format for dob" }),
+      );
+    }
   }
 
   const user = await updateUserById(req.params.id, {

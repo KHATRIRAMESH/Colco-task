@@ -21,6 +21,7 @@ CREATE TABLE users(
 
 CREATE TABLE artists(
     id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id),
     name TEXT NOT NULL,
     dob DATE,
     gender gender_type,
@@ -28,7 +29,8 @@ CREATE TABLE artists(
     first_release_year INT,
     no_of_albums_released INT,
     created_by INT REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE songs (
@@ -37,7 +39,8 @@ CREATE TABLE songs (
     album_name TEXT,
     genre genre_type,
     artist_id INT REFERENCES artists(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE sessions (

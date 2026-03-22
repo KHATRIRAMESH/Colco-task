@@ -1,5 +1,3 @@
-// import { findSessionById } from "../services/user.service.js";
-
 import { findSessionById } from "../services/sessions.service.js";
 
 export function extractSessionIdFromRequest(req) {
@@ -18,18 +16,21 @@ export function extractSessionIdFromRequest(req) {
   return rawSessionId || null;
 }
 
-export async function sessionAuthMiddleware(req, _res, next = async () => {}) {
+export async function sessionAuthMiddleware(req, res, next = async () => {}) {
   const sessionId = extractSessionIdFromRequest(req);
 
   req.sessionId = sessionId;
   req.session = null;
   req.isAuthenticated = false;
+  req.userId = null;
 
   if (sessionId) {
     const session = await findSessionById(sessionId);
+
     if (session) {
       req.session = session;
       req.isAuthenticated = true;
+      req.userId = session.user_id ?? null;
     }
   }
 

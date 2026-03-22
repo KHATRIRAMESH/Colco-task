@@ -103,8 +103,8 @@ async function deleteUser(userId) {
   return data;
 }
 
-async function getSongs() {
-  const response = await fetch("/api/songs?page=1&limit=10", {
+async function getSongs(page, limit) {
+  const response = await fetch(`/api/songs?page=${page}&limit=${limit}`, {
     credentials: "same-origin",
     method: "GET",
   });

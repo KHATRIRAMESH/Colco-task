@@ -12,12 +12,14 @@ import {
 } from "./controllers/user.controller.js";
 import {
   createArtistController,
+  deleteArtistController,
   getArtistsController,
+  updateArtistController,
 } from "./controllers/artist.controller.js";
 import {
   createSongsController,
   getSongsController,
-} from "./controllers/songs.controller.js";
+} from "./controllers/song.controller.js";
 import { pathToRegex } from "./utils/pathConverter.js";
 
 const routes = [
@@ -35,8 +37,16 @@ const routes = [
   //artist management routes
   { method: "POST", path: "/api/artists", handler: createArtistController },
   { method: "GET", path: "/api/artists", handler: getArtistsController },
-  // { method: "PUT", path: "/api/artists/:id", handler: updateArtistController },
-  // { method: "DELETE", path: "/api/artists/:id", handler: deleteArtistController },
+  {
+    method: "PATCH",
+    path: "/api/artists/:id",
+    handler: updateArtistController,
+  },
+  {
+    method: "DELETE",
+    path: "/api/artists/:id",
+    handler: deleteArtistController,
+  },
 
   // song management routes
   { method: "GET", path: "/api/songs", handler: getSongsController },
@@ -79,8 +89,11 @@ const server = http.createServer(async (req, res) => {
     await serveStatic(req, res);
   } catch (error) {
     console.error("Static serve error:", error);
-    res.writeHead(500, { "Content-Type": "text/plain" });
-    res.end("Internal server error");
+    if (!res.headersSent && !res.writableEnded) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      return res.end("Internal server error");
+    }
+    return;
   }
 });
 

@@ -20,88 +20,6 @@ const paginationState = {
   songs: { page: 1, limit: 10, totalRecords: 0, totalPages: 1 },
 };
 
-//form for creating the Artist Manager.
-function getCreateOrUpdateArtistManagerFormHtml() {
-  return `
-        <section class="content-block">
-            <h3>Create Artist Manager</h3>
-            <form id="create-artist-manager-form" class="inline-form">
-                <label for="am-first-name">First Name</label>
-                <input type="text" id="am-first-name" placeholder="First Name" required />
-                <label for="am-last-name">Last Name</label>
-                <input type="text" id="am-last-name" placeholder="Last Name" required />
-                <label for="am-dob">Date of Birth</label>
-                <input type="date" id="am-dob" placeholder="Date of Birth" required />
-                <label for="am-email">Email</label>
-                <input type="email" id="am-email" placeholder="Email" required />
-                <label for="am-password">Password</label>
-                <input type="password" id="am-password" placeholder="Password" required />
-                <label for="am-phone">Phone</label>
-                <input type="tel" id="am-phone" placeholder="Phone (optional)" />
-                <label for="am-gender">Gender</label>
-                <select id="am-gender">
-                    <option value="">Gender (optional)</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                </select>
-                <label for="am-address">Address</label>
-                <input type="text" id="am-address" placeholder="Address (optional)" />
-                <button type="submit">Create Artist Manager</button>
-            </form>
-        </section>
-    `;
-}
-
-// Form for creating an Artist.
-function getCreateOrUpdateArtistFormHtml() {
-  return `
-        <section class="content-block">
-            <h3>Create Artist</h3>
-            <form id="create-artist-form" class="inline-form">
-                <lable for="artist-name">Artist Name</lable>
-                <input type="text" id="artist-name" placeholder="Artist Name" required />
-                <lable for="artist-dob">Date of Birth</lable>
-                <input type="date" id="artist-dob" placeholder="Date of Birth" required />
-                <lable for="artist-gender">Gender</lable>
-                <select id="artist-gender">
-                    <option value="">Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                </select>
-                <lable for="artist-address">Address</lable>
-                <input type="text" id="artist-address" placeholder="Address (optional)" />
-                <lable for="artist-first-release">First Release Year</lable>
-                <input type="number" id="artist-first-release" placeholder="First Release Year"/>
-                <lable for="artist-albums-released">Number of Albums Released</lable>
-                <input type="number" id="artist-albums-released" placeholder="Number of Albums Released" />
-
-                <button type="submit">Create Artist</button>
-            </form>
-        </section>
-    `;
-}
-
-function getCreateOrUpdateSongFormHtml() {
-  return `
-        <section class="content-block">
-            <h3>Create Song</h3>
-            <form id="create-song-form" class="inline-form">
-                <label for="song-name">Song Name</label>
-                <input type="text" id="song-name" placeholder="Song Name" required />
-                <label for="song-genre">Genre</label>
-                <input type="text" id="song-genre" placeholder="Genre" required />
-                <label for="song-artist">Artist</label>
-                <select id="song-artist">
-                    <option value="">Select Artist</option>
-                </select>
-                <button type="submit">Create Song</button>
-            </form>
-        </section>
-    `;
-}
-
 function getCreateButtonConfig(role, entity) {
   if (role === "super_admin" && entity === "users") {
     return { entity: "users", label: "Create Artist Manager" };
@@ -149,7 +67,7 @@ function getCreateModalFields(entity) {
       <label for="create-password">Password</label>
       <input id="create-password" name="password" type="password" required />
       <label for="create-phone">Phone</label>
-      <input id="create-phone" name="phone" type="text" />
+      <input id="create-phone" name="phone" type="tel" />
       <label for="create-gender">Gender</label>
       <select id="create-gender" name="gender">
         <option value="">Select gender</option>
@@ -165,11 +83,23 @@ function getCreateModalFields(entity) {
 
   if (entity === "artists") {
     return `
-      <label for="create-name">Name</label>
-      <input id="create-name" name="name" type="text" required />
+      <label for="create-first-name">First Name</label>
+      <input id="create-first-name" name="firstName" type="text" required />
+
+      <label for="create-last-name">Last Name</label>
+      <input id="create-last-name" name="lastName" type="text" required />
 
       <label for="create-dob">Date of Birth</label>
       <input id="create-dob" name="dob" type="date" required />
+
+      <label for="create-email">Email</label>
+      <input id="create-email" name="email" type="email" required />
+
+      <label for="create-password">Password</label>
+      <input id="create-password" name="password" type="password" required />
+
+      <label for="create-phone">Phone</label>
+      <input id="create-phone" name="phone" type="tel" placeholder="98XXXXXXXX" />
 
       <label for="create-gender">Gender</label>
       <select id="create-gender" name="gender" required>
@@ -193,15 +123,20 @@ function getCreateModalFields(entity) {
     return `
       <label for="create-title">Title</label>
       <input id="create-title" name="title" type="text" required />
-
-      <label for="create-genre">Genre</label>
-      <input id="create-genre" name="genre" type="text" required />
-
+      
       <label for="create-album">Album</label>
       <input id="create-album" name="albumName" type="text" />
 
-      <label for="create-artist-id">Artist ID</label>
-      <input id="create-artist-id" name="artistId" type="number" />
+      <label for="create-genre">Genre</label>
+       <select id="create-genre" name="genre" required>
+        <option value="rnb">rnb</option>
+        <option value="country">country</option>
+        <option value="classic">classic</option>
+        <option value="rock">rock</option>
+        <option value="jazz">jazz</option>
+      </select>
+      
+
     `;
   }
 
@@ -407,12 +342,6 @@ function getRowByEntityAndId(entity, rowId) {
 }
 
 function getModalFields(entity, row) {
-  console.log(
-    "Getting modal fields for entity:",
-    entity,
-    "with row data:",
-    row,
-  );
   if (entity === "users") {
     return `
       <label for="edit-first-name">First Name</label>
@@ -868,7 +797,6 @@ if (registerForm) {
     const lastName = document.getElementById("last-name").value.trim();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-    const countryCode = document.getElementById("countryCode").value;
     const phone = document.getElementById("phone").value.trim();
     const dob = document.getElementById("date-of-birth").value;
     const gender = document.getElementById("gender").value;
@@ -879,7 +807,7 @@ if (registerForm) {
       lastName,
       email,
       password,
-      phone: `${countryCode}${phone}`,
+      phone,
       dob,
       gender,
       address,

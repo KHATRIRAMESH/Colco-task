@@ -15,7 +15,7 @@ export async function insertUser({
   email,
   password,
   phone,
-  dob,
+  dobDate,
   gender,
   address,
   role,
@@ -26,11 +26,13 @@ export async function insertUser({
     email,
     password,
     phone || null,
-    dob || null,
+    dobDate || null,
     gender || null,
     address || null,
     role,
   ];
+
+  console.log("Inserting user with values:", values);
 
   const result = await pool.query(CREATE_USER_QUERY, values);
   return result.rows[0];
@@ -97,7 +99,7 @@ export async function updateUserById(userId, updateData) {
   const values = updates.map(([, value]) => value);
 
   values.push(userId);
-  console.log("Update user query values:", setClause);
+  console.log("Update user query values:", setClause, values.length);
 
   const updateQuery = buildUpdateUserQuery(setClause, values.length);
 
