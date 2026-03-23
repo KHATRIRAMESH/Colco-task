@@ -8,8 +8,8 @@ import {
 } from "../queries/artist.queries.js";
 import { camelToSnakeCase } from "../utils/converter.js";
 
-export async function createArtist(artistData) {
-  const result = await pool.query(CREATE_ARTIST_QUERY, artistData);
+export async function createArtist(values) {
+  const result = await pool.query(CREATE_ARTIST_QUERY, values);
   return result.rows[0];
 }
 
@@ -78,4 +78,9 @@ export async function findArtistId(userId) {
     userId,
   ]);
   return result.rows[0];
+}
+
+export async function getAllArtists() {
+  const result = await pool.query("SELECT * FROM artists");
+  return result.rows;
 }

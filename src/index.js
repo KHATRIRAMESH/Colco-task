@@ -15,10 +15,14 @@ import {
   deleteArtistController,
   getArtistsController,
   updateArtistController,
+  exportArtistsController,
+  importArtistsController,
 } from "./controllers/artist.controller.js";
 import {
   createSongsController,
   getSongsController,
+  updateSongController,
+  deleteSongController,
 } from "./controllers/song.controller.js";
 import { pathToRegex } from "./utils/pathConverter.js";
 
@@ -37,6 +41,8 @@ const routes = [
   //artist management routes
   { method: "POST", path: "/api/artists", handler: createArtistController },
   { method: "GET", path: "/api/artists", handler: getArtistsController },
+  { method: "GET", path: "/api/artists/export", handler: exportArtistsController },
+  { method: "POST", path: "/api/artists/import", handler: importArtistsController },
   {
     method: "PATCH",
     path: "/api/artists/:id",
@@ -51,6 +57,8 @@ const routes = [
   // song management routes
   { method: "GET", path: "/api/songs", handler: getSongsController },
   { method: "POST", path: "/api/songs", handler: createSongsController },
+  { method: "PATCH", path: "/api/songs/:id", handler: updateSongController },
+  { method: "DELETE", path: "/api/songs/:id", handler: deleteSongController },
 ].map((route) => ({
   ...route,
   regex: pathToRegex(route.path),

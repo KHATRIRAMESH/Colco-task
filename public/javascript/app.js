@@ -26,7 +26,7 @@ function getCreateButtonConfig(role, entity) {
   }
 
   if (role === "artist_manager" && entity === "artists") {
-    return { entity: "artists", label: "Create Artist" };
+    return { entity: "artists", label: "Create Artist", showCsv: true };
   }
 
   if (role === "artist" && entity === "songs") {
@@ -47,9 +47,44 @@ function renderCreateButton(entity, role) {
     `
       <div class="table-toolbar">
         <button type="button" class="open-create-modal-btn" data-entity="${config.entity}">${config.label}</button>
+        ${config.showCsv ? `
+            <button type="button" class="csv-export-btn" id="csv-export-btn">Export CSV</button>
+            <input type="file" id="csv-file-input" accept=".csv" style="display:none;" />
+            <button type="button" class="csv-import-btn" id="csv-import-btn" onclick="document.getElementById('csv-file-input').click()">Import CSV</button>
+        ` : ""}
       </div>
     `,
   );
+
+  if (config.showCsv) {
+    const exportBtn = document.getElementById("csv-export-btn");
+    const fileInput = document.getElementById("csv-file-input");
+    
+    if (exportBtn) {
+      exportBtn.addEventListener("click", async () => {
+        try {
+          await exportArtists();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const res = await importArtists(file);
+          alert(res.message);
+          paginationState.artists.page = 1;
+          await loadArtistsTab(resolveCurrentRole());
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+  }
 }
 
 function getCreateModalFields(entity) {
@@ -236,6 +271,7 @@ function renderRows(title, rows, columns, entity) {
             return `
               <td>
                 <div class="table-actions" data-row-id="${row.id}">
+                  ${entity === "artists" ? `<button type="button" class="action-btn view-songs-btn" data-action="view-songs" data-id="${row.id}">View Songs</button>` : ""}
                   <button type="button" class="action-btn update-btn" data-action="update" data-id="${row.id}">Update</button>
                   <button type="button" class="action-btn delete-btn" data-action="delete" data-id="${row.id}">Delete</button>
                 </div>
@@ -571,6 +607,11 @@ async function handleTableActionClick(event) {
     if (action === "delete") {
       await handleDeleteAction(entity, rowId);
     }
+
+    if (action === "view-songs") {
+      paginationState.songs.page = 1;
+      await loadSongsTab(rowId);
+    }
   } catch (error) {
     alert(error.message || "Action failed");
   }
@@ -729,15 +770,25 @@ async function loadArtistsTab(role) {
   }
 }
 
-async function loadSongsTab() {
+async function loadSongsTab(artistIdFilter = null) {
   if (!tabContent) {
     return;
   }
 
   tabContent.innerHTML = "<p>Loading songs...</p>";
 
+  if (artistIdFilter !== null) {
+    paginationState.songs.currentArtistId = artistIdFilter;
+  } else if (!paginationState.songs.currentArtistId) {
+    paginationState.songs.currentArtistId = null;
+  }
+
   try {
-    const data = await getSongs();
+    const data = await getSongs({
+      page: paginationState.songs.page,
+      limit: paginationState.songs.limit,
+      artistId: paginationState.songs.currentArtistId
+    });
     tableDataStore.songs = data.songs || [];
     setClientPaginationMeta("songs", tableDataStore.songs.length);
     const paginatedSongs = getClientPaginatedRows(

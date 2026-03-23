@@ -12,8 +12,24 @@ import { getRequestBody } from "../utils/bodyParse.js";
 import { converter } from "../utils/converter.js";
 import { normalizeGender } from "../utils/genderNormalize.js";
 import { hashPassword } from "../utils/hashPassword.js";
+import { validateMinLength, validateEmail } from "../utils/validate.js";
 
 export async function getArtistsController(req, res) {
+  await sessionAuthMiddleware(req, res);
+  if (!req.isAuthenticated || !req.sessionId) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Unauthorized" }));
+  }
+  const currentUser = await findUserBySessionId(req.sessionId);
+  if (
+    !currentUser ||
+    (currentUser.role !== "super_admin" &&
+      currentUser.role !== "artist_manager")
+  ) {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Forbidden" }));
+  }
+
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
 
@@ -36,6 +52,15 @@ export async function getArtistsController(req, res) {
 
 export async function createArtistController(req, res) {
   await sessionAuthMiddleware(req, res);
+  if (!req.isAuthenticated || !req.sessionId) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Unauthorized" }));
+  }
+  const currentUser = await findUserBySessionId(req.sessionId);
+  if (!currentUser || currentUser.role !== "artist_manager") {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Forbidden" }));
+  }
 
   try {
     const body = await getRequestBody(req);
@@ -148,6 +173,15 @@ export async function createArtistController(req, res) {
 
 export async function deleteArtistController(req, res) {
   await sessionAuthMiddleware(req, res);
+  if (!req.isAuthenticated || !req.sessionId) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Unauthorized" }));
+  }
+  const currentUser = await findUserBySessionId(req.sessionId);
+  if (!currentUser || currentUser.role !== "artist_manager") {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Forbidden" }));
+  }
   const artistId = req.params.id;
 
   const artistResult = await pool.query(
@@ -232,6 +266,142 @@ export async function updateArtistController(req, res) {
     );
   } catch (error) {
     console.error("Update artist error:", error);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Internal server error" }));
+  }
+}
+
+export async function exportArtistsController(req, res) {
+  await sessionAuthMiddleware(req, res);
+  if (!req.isAuthenticated) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Unauthorized" }));
+  }
+  const currentUser = await findUserBySessionId(req.sessionId);
+  if (!currentUser || currentUser.role !== "artist_manager") {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Forbidden" }));
+  }
+
+  try {
+    const { getAllArtists } = await import("../services/artist.service.js");
+    const artists = await getAllArtists();
+    if (artists.length === 0) {
+      res.writeHead(200, { "Content-Type": "text/csv" });
+      return res.end(
+        "id,name,dob,gender,address,first_release_year,no_of_albums_released\n",
+      );
+    }
+    const header = Object.keys(artists[0]).join(",");
+    const rows = artists.map((a) =>
+      Object.values(a)
+        .map((v) => `"${String(v !== null ? v : "").replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const csv = [header, ...rows].join("\n");
+    res.writeHead(200, {
+      "Content-Type": "text/csv",
+      "Content-Disposition": "attachment; filename=artists.csv",
+    });
+    return res.end(csv);
+  } catch (error) {
+    console.error("Export error:", error);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Internal server error" }));
+  }
+}
+
+export async function importArtistsController(req, res) {
+  await sessionAuthMiddleware(req, res);
+  if (!req.isAuthenticated) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Unauthorized" }));
+  }
+  const currentUser = await findUserBySessionId(req.sessionId);
+  if (!currentUser || currentUser.role !== "artist_manager") {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Forbidden" }));
+  }
+
+  try {
+    const body = await getRequestBody(req);
+    const rows = body.csvRows;
+
+    if (!rows || rows.length === 0) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ message: "Empty or invalid CSV" }));
+    }
+
+    const errors = [];
+    let imported = 0;
+
+    for (const [index, row] of rows.entries()) {
+      const rowNum = index + 2; // +2 to account for header and 0-based index
+      try {
+        let passwordValue = row.password;
+        if (!validateMinLength(passwordValue, 6)) {
+          throw new Error("Password must be at least 6 characters long");
+        }
+        const { hashedPassword } = hashPassword(passwordValue);
+
+        let emailValue = row.email || `artist${Date.now()}${index}@example.com`;
+        if (!validateEmail(emailValue)) {
+          throw new Error("Invalid email format");
+        }
+
+        let dobDate = null;
+        if (row.dob) {
+          dobDate = converter(row.dob, "date");
+          if (isNaN(dobDate.getTime())) dobDate = null;
+        }
+
+        const normalizedGender = normalizeGender(row.gender || "m");
+
+        const userValues = {
+          firstName: row.firstName || row.first_name || row.name || "Unknown",
+          lastName: row.lastName || row.last_name || "Artist",
+          email: emailValue,
+          password: hashedPassword,
+          phone: row.phone || null,
+          dobDate: dobDate,
+          gender: normalizedGender || "m",
+          address: row.address || null,
+          role: "artist",
+        };
+
+        const userResult = await insertUser(userValues);
+
+        const firstReleaseYear = row.firstReleaseYear || row.first_release_year;
+        const noOfAlbumsReleased =
+          row.noOfAlbumsReleased || row.no_of_albums_released;
+
+        const artistValues = [
+          userResult.id,
+          `${userValues.firstName} ${userValues.lastName}`.trim(),
+          dobDate,
+          userValues.gender,
+          userValues.address,
+          firstReleaseYear ? parseInt(firstReleaseYear) : null,
+          noOfAlbumsReleased ? parseInt(noOfAlbumsReleased) : null,
+        ];
+
+        await createArtist(artistValues);
+        imported++;
+      } catch (err) {
+        console.error(`Error importing row ${rowNum}:`, err.message);
+        errors.push(`Row ${rowNum}: ${err.message}`);
+      }
+    }
+
+    res.writeHead(201, { "Content-Type": "application/json" });
+    return res.end(
+      JSON.stringify({
+        message: `Successfully imported ${imported} artists.`,
+        errors: errors.length > 0 ? errors : undefined,
+      }),
+    );
+  } catch (error) {
+    console.error("Import error:", error);
     res.writeHead(500, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ message: "Internal server error" }));
   }

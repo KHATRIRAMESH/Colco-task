@@ -103,8 +103,12 @@ async function deleteUser(userId) {
   return data;
 }
 
-async function getSongs(page, limit) {
-  const response = await fetch(`/api/songs?page=${page}&limit=${limit}`, {
+async function getSongs({ page = 1, limit = 10, artistId = null } = {}) {
+  let url = `/api/songs?page=${page}&limit=${limit}`;
+  if (artistId) {
+      url += `&artist_id=${artistId}`;
+  }
+  const response = await fetch(url, {
     credentials: "same-origin",
     method: "GET",
   });
@@ -215,5 +219,40 @@ async function logOut() {
     throw new Error(data.message || "Logout failed");
   }
   stateManage.logOut();
+  return data;
+}
+
+async function exportArtists() {
+  const response = await fetch("/api/artists/export", {
+    method: "GET",
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.message || "Failed to export artists");
+  }
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "artists.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function importArtists(file) {
+  const response = await fetch("/api/artists/import", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "text/csv"
+    },
+    body: file
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to import artists");
+  }
   return data;
 }

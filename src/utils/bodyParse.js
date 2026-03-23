@@ -1,26 +1,33 @@
+import { parseCSV } from "./csvParser.js";
+
 export function getRequestBody(req) {
   return new Promise((resolve, reject) => {
-    let body = "";
+    const chunks = [];
     req.on("data", (chunk) => {
-      body += chunk;
+      chunks.push(chunk);
     });
 
     req.on("end", () => {
       try {
-        if (!body) {
-          return resolve({});
-        }
-
+        const buffer = Buffer.concat(chunks);
         const contentType = req.headers["content-type"] || "";
 
         if (contentType.includes("application/json")) {
-          return resolve(JSON.parse(body));
+          const text = buffer.toString("utf-8");
+          return resolve(text ? JSON.parse(text) : {});
         }
 
         if (contentType.includes("application/x-www-form-urlencoded")) {
-          const params = new URLSearchParams(body);
+          const text = buffer.toString("utf-8");
+          const params = new URLSearchParams(text);
           const parsed = Object.fromEntries(params.entries());
           return resolve(parsed);
+        }
+
+        if (contentType.includes("text/csv")) {
+          const text = buffer.toString("utf-8");
+          const rows = parseCSV(text);
+          return resolve({ csvRows: rows });
         }
 
         try {

@@ -16,6 +16,7 @@ import {
 } from "../services/sessions.service.js";
 import { converter } from "../utils/converter.js";
 import { normalizeGender } from "../utils/genderNormalize.js";
+import { validateEmail, validateMinLength } from "../utils/validate.js";
 
 export async function registerUserController(req, res) {
   try {
@@ -38,15 +39,7 @@ export async function registerUserController(req, res) {
       return res.end(JSON.stringify({ message: "Missing required fields" }));
     }
 
-    const genderMap = {
-      male: "m",
-      female: "f",
-      other: "o",
-    };
-
-    const normalizedGender = gender
-      ? genderMap[String(gender).toLowerCase()]
-      : null;
+    const normalizedGender = normalizeGender(gender);
     if (gender && !normalizedGender) {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ message: "Invalid gender value" }));
@@ -57,6 +50,20 @@ export async function registerUserController(req, res) {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(
         JSON.stringify({ message: "Invalid date format for dob" }),
+      );
+    }
+
+    if (!validateEmail(email)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ message: "Invalid email format" }));
+    }
+
+    if (!validateMinLength(password, 6)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(
+        JSON.stringify({
+          message: "Password must be at least 6 characters long",
+        }),
       );
     }
 
@@ -114,7 +121,7 @@ export async function createUserController(req, res) {
       res.writeHead(403, { "Content-Type": "application/json" });
       return res.end(
         JSON.stringify({
-          message: "Only super_admin can create artist_manager users",
+          message: "Only super_admin can create users",
         }),
       );
     }
@@ -129,6 +136,7 @@ export async function createUserController(req, res) {
       gender,
       address,
       dob,
+      role = "artist_manager",
     } = body;
 
     if (!firstName || !lastName || !email || !password) {
@@ -136,15 +144,7 @@ export async function createUserController(req, res) {
       return res.end(JSON.stringify({ message: "Missing required fields" }));
     }
 
-    const genderMap = {
-      male: "m",
-      female: "f",
-      other: "o",
-    };
-
-    const normalizedGender = gender
-      ? genderMap[String(gender).toLowerCase()]
-      : null;
+    const normalizedGender = normalizeGender(gender);
     if (gender && !normalizedGender) {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ message: "Invalid gender value" }));
@@ -163,6 +163,26 @@ export async function createUserController(req, res) {
       `Hashed password generated for user creation:  ${hashedPassword}`,
     );
 
+    if (!validateEmail(email)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ message: "Invalid email format" }));
+    }
+
+    if (!validateMinLength(password, 6)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(
+        JSON.stringify({
+          message: "Password must be at least 6 characters long",
+        }),
+      );
+    }
+
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      res.writeHead(409, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ message: "Email already exists" }));
+    }
+
     const user = await insertUser({
       firstName,
       lastName,
@@ -172,13 +192,13 @@ export async function createUserController(req, res) {
       dobDate,
       gender: normalizedGender,
       address,
-      role: "artist_manager",
+      role,
     });
 
     res.writeHead(201, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
-        message: "Artist manager created successfully",
+        message: "User created successfully",
         user,
       }),
     );
@@ -200,6 +220,21 @@ export async function createUserController(req, res) {
 }
 
 export async function getUsersController(req, res) {
+  await sessionAuthMiddleware(req, res);
+
+  if (!req.isAuthenticated || !req.sessionId) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ message: "Unauthorized" }));
+  }
+
+  const currentUser = await findUserBySessionId(req.sessionId);
+  if (!currentUser || currentUser.role !== "super_admin") {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    return res.end(
+      JSON.stringify({ message: "Forbidden: Only super_admin can view users" }),
+    );
+  }
+
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
 
