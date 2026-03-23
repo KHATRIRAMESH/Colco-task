@@ -1,16 +1,10 @@
-# Colco Task
+# Colco Task: Artist Management Admin Panel
 
-A Simple Admin panel to manage records of artists with their songs collection.
+A simple Admin panel to manage records of artists with their songs collection.
 
-Current state:
+---
 
-- public
-- src
-- sql
-- .env.example
-- docker-compose.yml
-
-## Project Structure
+## 📂 Project Structure
 
 ```text
 colco-task/
@@ -22,159 +16,99 @@ colco-task/
 │   ├── dashboard.html
 │   ├── javascript
 │   │   ├── api.js
-│   │   └── app.js
+│   │   ├── app.js
+│   │   └── state.js
 │   ├── login.html
 │   ├── register.html
-│   ├── songs.html
-│   ├── styles
-│   │   ├── dashboard.css
-│   │   └── login.css
-│   └── users.html
+│   └── styles
+│       ├── dashboard.css
+│       └── login.css
 ├── README.md
 ├── sql
 │   ├── queries.js
 │   └── schema.sql
 └── src
     ├── controllers
-    │   └── userController.js
+    │   ├── artist.controller.js
+    │   ├── song.controller.js
+    │   └── user.controller.js
     ├── db
     │   └── dbConnect.js
     ├── index.js
     ├── middleware
     │   └── sessionAuth.js
-    ├── router.js
-    ├── routes
-    │   ├── songs.js
-    │   └── users.js
+    ├── queries
+    │   ├── artist.queries.js
+    │   ├── song.queries.js
+    │   └── user.queries.js
     ├── services
-    │   └── user.js
+    │   ├── artist.service.js
+    │   ├── song.service.js
+    │   └── user.service.js
     └── utils
         ├── bodyParse.js
+        ├── validate.js
         └── static.js
 ```
 
-## Prerequisites
+---
 
-Install these on your machine:
+## 🛠️ Prerequisites
 
-- Docker + Docker Compose
-- Node.js 18+ and npm
+Ensure your host machine has the following dependencies initialized:
+*   **Docker** & **Docker Compose**
+*   **Node.js 18+** & **npm**
 
-Check quickly:
+---
 
-```bash
-docker --version
-docker compose version
-node -v
-npm -v
-```
+## ⚙️ Setup & Execution
 
-## 1) Configure Environment Variables
+### 1) Configure Environment Variables
 
-From project root:
-
+Replicate the environment schema provided in the base directory to hook environment states into active configurations.
 ```bash
 cp .env.example .env
 ```
-
-Default values in `.env`:
-
+Default `.env` assignments check logic:
 ```env
 DB_USER=admin
 DB_PASSWORD=password
 DB_NAME=artistdb
 ```
 
-## 2) Start PostgreSQL with Docker
-
-From project root:
-
+### 2) Database Architecture initialization
+Launch the PostgreSQL engine implicitly through Docker Compose natively. 
 ```bash
 docker compose up -d postgres
-docker compose ps
 ```
+The architecture explicitly maps internal bindings to your host system across port `:5433` avoiding typical fallback collisions on `:5432`. Upon startup, the container accurately constructs schemas resolving to `sql/schema.sql`.
 
-Expected port mapping:
-
-- Host: `5433`
-- Container: `5432`
-
-The database schema is auto-created on first startup from:
-
-- `sql/schema.sql`
-
-## 3) Install Dependencies
-
-From project root:
-
+### 3) Install Node Packages
+Install minimal dependencies (`pg`, `dotenv`, `nodemon`) for compiling connections:
 ```bash
 npm install
 ```
 
-## 4) Run Backend
-
-From project root:
-
+### 4) Launching the Backend Server 
 ```bash
 npm run dev
 ```
+Execute the backend pipeline directly; the server immediately intercepts local bindings.
+Navigate your browser to: `http://localhost:3000` to proceed onto the UI interceptor directly linking context tracking via Login schemas!
 
-Expected log:
+---
 
-```text
-Server is running...
-```
+## 🩺 Troubleshooting
 
-## 5) Stop Services
+**Docker is not responsive/running**
+Start your Docker Desktop layout or background daemon and reissue the container instantiation.
 
-From project root:
+**Postgres Database connection faults on UI startup**
+Verify local environment configurations `.env` accurately reflect connection settings encoded within `src/db/dbConnect.js`.
 
-```bash
-docker compose down
-```
-
-If you want to remove DB data volume too (fresh DB next run):
-
-```bash
-docker compose down -v
-```
-
-## Troubleshooting
-
-### Docker not running
-
-Start Docker Desktop / Docker daemon, then retry:
-
-```bash
-docker compose up -d postgres
-```
-
-### Port `5432` already in use
-
-This project already maps Postgres to host port `5433`, so it can coexist with another local Postgres on `5432`.
-
-### Postgres container exits immediately
-
-Ensure `docker-compose.yml` uses a pinned image (`postgres:17`) and not `postgres:latest`.
-
-### Container name conflict (`artist-db` already exists)
-
-If you previously started DB from another compose project/folder:
-
-```bash
-docker rm -f artist-db
-docker compose up -d postgres
-```
-
-### Re-initialize schema
-
-If SQL changes are not reflected, recreate volume:
-
+**Schema Re-Initialization**
+If SQL changes fail to project themselves actively after rewriting `schema.sql`, immediately purge local caching volumes via:
 ```bash
 docker compose down -v
 docker compose up -d postgres
 ```
-
-## Notes
-
-- Database connection config is in `src/db/dbConnect.js`.
